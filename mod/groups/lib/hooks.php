@@ -132,19 +132,19 @@ function au_subgroups_groups_router($hook, $type, $return, $params) {
         set_input('au_subgroup', true);
         set_input('au_subgroup_parent_guid', $group->guid);
         if (include(elgg_get_plugins_path() . 'groups/pages/add.php')) {
-          return true;
+          return false;
         }
         break;
         
       case 'delete':
         if (include(elgg_get_plugins_path() . 'groups/pages/delete.php')) {
-          return true;
+          return false;
         }
         break;
 		
 	  case 'list':
 		if (include(elgg_get_plugins_path() . 'groups/pages/list.php')) {
-		  return true;
+		  return false;
 		}
 		break;
     }
