@@ -1309,7 +1309,6 @@ function groups_test($hook, $type, $value, $params) {
 }
 
 
-
 //SUBGROUPS
 
 // definitions

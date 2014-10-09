@@ -131,19 +131,19 @@ function au_subgroups_groups_router($hook, $type, $return, $params) {
       case 'add':
         set_input('au_subgroup', true);
         set_input('au_subgroup_parent_guid', $group->guid);
-        if (include(elgg_get_plugins_path() . 'au_subgroups/pages/add.php')) {
+        if (include(elgg_get_plugins_path() . 'groups/pages/add.php')) {
           return true;
         }
         break;
         
       case 'delete':
-        if (include(elgg_get_plugins_path() . 'au_subgroups/pages/delete.php')) {
+        if (include(elgg_get_plugins_path() . 'groups/pages/delete.php')) {
           return true;
         }
         break;
 		
 	  case 'list':
-		if (include(elgg_get_plugins_path() . 'au_subgroups/pages/list.php')) {
+		if (include(elgg_get_plugins_path() . 'groups/pages/list.php')) {
 		  return true;
 		}
 		break;
