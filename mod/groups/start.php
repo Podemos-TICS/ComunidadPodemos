@@ -1329,7 +1329,7 @@ function au_subgroups_init() {
   elgg_extend_view('navigation/breadcrumbs', 'au_subgroups/breadcrumb_override', 1);
   elgg_extend_view('group/elements/summary', 'au_subgroups/group/elements/summary');
   elgg_extend_view('groups/tool_latest', 'au_subgroups/group_module');
-  elgg_extend_view('groups/sidebar/members', 'au_subgroups/sidebar/subgroups');
+  elgg_extend_view('groups/sidebar/members', 'au_subgroups/sidebar/subgroups', -1);
   elgg_extend_view('groups/edit', 'au_subgroups/group/transfer');
   
   // register the edit page's JavaScript
