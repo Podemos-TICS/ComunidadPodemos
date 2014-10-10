@@ -11,7 +11,8 @@ $all_link = elgg_view('output/url', array(
 	'is_trusted' => true,
 ));
 
-$subgroups = au_subgroups_get_subgroups($vars['entity'], 5);
+// 
+$subgroups = au_subgroups_get_subgroups($vars['entity'], 0);
 $body = '';
 
 if (!$subgroups) {
@@ -20,13 +21,15 @@ if (!$subgroups) {
 else {
   foreach ($subgroups as $subgroup) {
     
-    $body .= elgg_view_image_block(
-        elgg_view_entity_icon($subgroup, 'tiny'),
-        elgg_view('output/url', array(
-            'href' => $subgroup->getURL(),
-            'text' => $subgroup->name,
-            'is_trusted' => true))
-     );
+    if($subgroup->isMember()){
+      $body .= elgg_view_image_block(
+	  elgg_view_entity_icon($subgroup, 'tiny'),
+	  elgg_view('output/url', array(
+	      'href' => $subgroup->getURL(),
+	      'text' => $subgroup->name,
+	      'is_trusted' => true))
+      );
+    }
   }
 }
 
