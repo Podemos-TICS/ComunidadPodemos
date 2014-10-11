@@ -1,6 +1,6 @@
 <?php
 
-if ($vars['entity']->subgroups_enable == 'no') {
+if (($vars['entity']->subgroups_enable == 'no') || (!au_subgroups_get_subgroups($vars['entity']))) {
   // no subgroups allowed
   return;
 }
@@ -15,21 +15,16 @@ $all_link = elgg_view('output/url', array(
 $subgroups = au_subgroups_get_subgroups($vars['entity'], 0);
 $body = '';
 
-if (!$subgroups) {
-  $body = '<div class="elgg-subtext">' . elgg_echo('au_subgroups:nogroups') . '</div>';
-}
-else {
-  foreach ($subgroups as $subgroup) {
-    
-    if($subgroup->isMember()){
-      $body .= elgg_view_image_block(
-	  elgg_view_entity_icon($subgroup, 'tiny'),
-	  elgg_view('output/url', array(
-	      'href' => $subgroup->getURL(),
-	      'text' => $subgroup->name,
-	      'is_trusted' => true))
-      );
-    }
+
+foreach ($subgroups as $subgroup) {
+  if($subgroup->isMember()){
+    $body .= elgg_view_image_block(
+	//elgg_view_entity_icon($subgroup, 'tiny'),
+	elgg_view('output/url', array(
+	    'href' => $subgroup->getURL(),
+	    'text' => $subgroup->name,
+	    'is_trusted' => true))
+    );
   }
 }
 
