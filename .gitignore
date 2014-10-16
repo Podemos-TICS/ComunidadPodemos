@@ -8,11 +8,13 @@ node_modules
 
 # don't ignore bundled plugins
 !/mod/aalborg_theme/
+!/mod/assemblies/
 !/mod/au_subgroups
 !/mod/blog/
 !/mod/bookmarks/
 !/mod/categories/
 !/mod/ckeditor/
+!/mod/crud/
 !/mod/custom_index/
 !/mod/dashboard/
 !/mod/developers/
@@ -34,6 +36,7 @@ node_modules
 !/mod/notifications/
 !/mod/pages/
 !/mod/profile/
+!/mod/proposals/
 !/mod/reportedcontent/
 !/mod/search/
 !/mod/site_notifications/
