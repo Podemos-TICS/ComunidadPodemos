@@ -47,6 +47,7 @@ node_modules
 !/mod/web_services/
 !/mod/zaudio/
 !/mod/deliberations/
+!/mod/advpoll/
 
 # ignore IDE/hidden/testing/OS cache files
 .*
