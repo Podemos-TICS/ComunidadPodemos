@@ -16,7 +16,7 @@ elgg_register_event_handler('init', 'system', 'groups_fields_setup', 10000);
 function groups_init() {
 
 	elgg_register_library('elgg:groups', elgg_get_plugins_path() . 'groups/lib/groups.php');
-	
+
 	//SUBGROUPS
 	// replace the existing groups library so we can push some display options
 	elgg_register_library('elgg:groups', elgg_get_plugins_path() . 'groups/lib/groups.php');
@@ -63,7 +63,7 @@ function groups_init() {
 			array('dashboard'),
 			true
 	);
-	
+
 	// add group activity tool option
 	add_group_tool_option('activity', elgg_echo('groups:enableactivity'), true);
 	elgg_extend_view('groups/tool_latest', 'groups/profile/activity_module');
@@ -73,7 +73,7 @@ function groups_init() {
 
 	// group entity menu
 	elgg_register_plugin_hook_handler('register', 'menu:entity', 'groups_entity_menu_setup');
-	
+
 	// group user hover menu
 	elgg_register_plugin_hook_handler('register', 'menu:user_hover', 'groups_user_entity_menu_setup');
 
@@ -100,7 +100,7 @@ function groups_init() {
 
 	// Register a handler for delete groups
 	elgg_register_event_handler('delete', 'group', 'groups_delete_event_listener');
-	
+
 	elgg_register_event_handler('join', 'group', 'groups_user_join_event_listener');
 	elgg_register_event_handler('leave', 'group', 'groups_user_leave_event_listener');
 	elgg_register_event_handler('pagesetup', 'system', 'groups_setup_sidebar_menus');
@@ -111,42 +111,6 @@ function groups_init() {
 
 	// Add tests
 	elgg_register_plugin_hook_handler('unit_test', 'system', 'groups_test');
-}
-
-/**
- * Set notifications about discussions and their replies to have just thread title as a subject.
- * This is to make more picky email clients happy while groupping messages in threads, as well as to
- * save space in subject line.
- *
- * @param $hook string
- * @param $type string
- * @param $returnvalue array
- * @param $params array
- * @return array
- */
-function discussion_notification_email_subject($hook, $type, $returnvalue, $params){
-
-	/** @var Elgg_Notifications_Notification */
-	$notification = elgg_extract('notification', $returnvalue['params']);
-
-	if ($notification instanceof Elgg_Notifications_Notification) {
-
-		$object = elgg_extract('object', $notification->params);
-		/** @var Elgg_Notifications_Event $event */
-		$event = elgg_extract('event', $notification->params);
-
-		if ($object instanceof ElggEntity) {
-			if ($object->getSubtype() === 'groupforumtopic') {
-				$returnvalue['subject'] = $object->getDisplayName();
-			}
-			$container = $object->getContainerEntity();
-
-			if (($container instanceof ElggEntity) && ($object instanceof ElggComment)) {
-				$returnvalue['subject'] = 'Re: ' . $container->getDisplayName();
-			}
-		}
-	}
-	return $returnvalue;
 }
 
 /**
@@ -232,7 +196,7 @@ function groups_setup_sidebar_menus() {
 			$url =  "groups/owner/$user->username";
 			$item = new ElggMenuItem('groups:owned', elgg_echo('groups:owned'), $url);
 			elgg_register_menu_item('page', $item);
-			
+
 			$url = "groups/member/$user->username";
 			$item = new ElggMenuItem('groups:member', elgg_echo('groups:yours'), $url);
 			elgg_register_menu_item('page', $item);
@@ -272,7 +236,7 @@ function groups_setup_sidebar_menus() {
  * @return bool
  */
 function groups_page_handler($page) {
-	
+
 	elgg_load_library('elgg:groups');
 
 	if (!isset($page[0])) {
@@ -459,7 +423,7 @@ function groups_entity_menu_setup($hook, $type, $return, $params) {
 	// feature link
 	if (elgg_is_admin_logged_in()) {
 		$isFeatured = $entity->featured_group == "yes";
-		
+
 		$return[] = ElggMenuItem::factory(array(
 			'name' => 'feature',
 			'text' => elgg_echo("groups:makefeatured"),
@@ -486,14 +450,14 @@ function groups_entity_menu_setup($hook, $type, $return, $params) {
 function groups_user_entity_menu_setup($hook, $type, $return, $params) {
 	if (elgg_is_logged_in()) {
 		$group = elgg_get_page_owner_entity();
-		
+
 		// Check for valid group
 		if (!elgg_instanceof($group, 'group')) {
 			return $return;
 		}
-	
+
 		$entity = $params['entity'];
-		
+
 		// Make sure we have a user and that user is a member of the group
 		if (!elgg_instanceof($entity, 'user') || !$group->isMember($entity)) {
 			return $return;
@@ -525,7 +489,7 @@ function groups_annotation_menu_setup($hook, $type, $return, $params) {
 	if (elgg_in_context('widgets')) {
 		return $return;
 	}
-	
+
 	$annotation = $params['annotation'];
 
 	if ($annotation->name != 'group_topic_post') {
@@ -730,7 +694,7 @@ function groups_join_group($group, $user) {
 	$ia = elgg_set_ignore_access(TRUE);
 	$result = $group->join($user);
 	elgg_set_ignore_access($ia);
-	
+
 	if ($result) {
 		// flush user's access info so the collection is added
 		get_access_list($user->guid, 0, true);
@@ -798,505 +762,6 @@ function groupprofile_ecml_views_hook($hook, $entity_type, $return_value, $param
 	return $return_value;
 }
 
-
-
-/**
- * Discussion
- *
- */
-
-elgg_register_event_handler('init', 'system', 'discussion_init');
-
-/**
- * Initialize the discussion component
- */
-function discussion_init() {
-
-	elgg_register_library('elgg:discussion', elgg_get_plugins_path() . 'groups/lib/discussion.php');
-
-	elgg_register_page_handler('discussion', 'discussion_page_handler');
-
-	elgg_register_plugin_hook_handler('entity:url', 'object', 'discussion_set_topic_url');
-
-	// commenting not allowed on discussion topics (use a different annotation)
-	elgg_register_plugin_hook_handler('permissions_check:comment', 'object', 'discussion_comment_override');
-	elgg_register_plugin_hook_handler('permissions_check', 'object', 'discussion_can_edit_reply');
-
-	// discussion reply menu
-	elgg_register_plugin_hook_handler('register', 'menu:entity', 'discussion_reply_menu_setup');
-
-	// allow non-owners to add replies to group discussion
-	elgg_register_plugin_hook_handler('container_permissions_check', 'object', 'discussion_reply_container_permissions_override');
-
-	elgg_register_event_handler('update', 'object', 'discussion_update_reply_access_ids');
-
-	$action_base = elgg_get_plugins_path() . 'groups/actions/discussion';
-	elgg_register_action('discussion/save', "$action_base/save.php");
-	elgg_register_action('discussion/delete', "$action_base/delete.php");
-	elgg_register_action('discussion/reply/save', "$action_base/reply/save.php");
-	elgg_register_action('discussion/reply/delete', "$action_base/reply/delete.php");
-	elgg_register_action('discussion/upgrade/2013100401', "$action_base/upgrades/2013100401.php", 'admin');
-
-	// add link to owner block
-	elgg_register_plugin_hook_handler('register', 'menu:owner_block', 'discussion_owner_block_menu');
-
-	// Register for search.
-	elgg_register_entity_type('object', 'groupforumtopic');
-
-	// because replies are not comments, need of our menu item
-	elgg_register_plugin_hook_handler('register', 'menu:river', 'discussion_add_to_river_menu');
-
-	// add the forum tool option
-	add_group_tool_option('forum', elgg_echo('groups:enableforum'), true);
-	elgg_extend_view('groups/tool_latest', 'discussion/group_module');
-
-	$discussion_js_path = elgg_get_site_url() . 'mod/groups/views/default/js/discussion/';
-	elgg_register_js('elgg.discussion', $discussion_js_path . 'discussion.js');
-
-	elgg_register_ajax_view('ajax/discussion/reply/edit');
-
-	// notifications
-	elgg_register_plugin_hook_handler('get', 'subscriptions', 'discussion_get_subscriptions');
-	elgg_register_notification_event('object', 'groupforumtopic');
-	elgg_register_plugin_hook_handler('prepare', 'notification:create:object:groupforumtopic', 'discussion_prepare_notification');
-	elgg_register_notification_event('object', 'discussion_reply');
-	elgg_register_plugin_hook_handler('prepare', 'notification:create:object:discussion_reply', 'discussion_prepare_reply_notification');
-	elgg_register_plugin_hook_handler('email', 'system', 'discussion_notification_email_subject');
-}
-
-/**
- * Discussion page handler
- *
- * URLs take the form of
- *  All topics in site:    discussion/all
- *  List topics in forum:  discussion/owner/<guid>
- *  View discussion topic: discussion/view/<guid>
- *  Add discussion topic:  discussion/add/<guid>
- *  Edit discussion topic: discussion/edit/<guid>
- *
- * @param array $page Array of url segments for routing
- * @return bool
- */
-function discussion_page_handler($page) {
-
-	elgg_load_library('elgg:discussion');
-
-	if (!isset($page[0])) {
-		$page[0] = 'all';
-	}
-
-	elgg_push_breadcrumb(elgg_echo('discussion'), 'discussion/all');
-
-	switch ($page[0]) {
-		case 'all':
-			discussion_handle_all_page();
-			break;
-		case 'owner':
-			discussion_handle_list_page($page[1]);
-			break;
-		case 'add':
-			discussion_handle_edit_page('add', $page[1]);
-			break;
-		case 'reply':
-			switch ($page[1]) {
-				case 'edit':
-					discussion_handle_reply_edit_page('edit', $page[2]);
-					break;
-				default:
-					return false;
-			}
-			break;
-		case 'edit':
-			discussion_handle_edit_page('edit', $page[1]);
-			break;
-		case 'view':
-			discussion_handle_view_page($page[1]);
-			break;
-		default:
-			return false;
-	}
-	return true;
-}
-
-/**
- * Override the url for discussion topics and replies
- *
- * Discussion replies do not have their own page so their url is
- * the same as the topic url.
- *
- * @param string $hook
- * @param string $type
- * @param string $url
- * @param array  $params
- * @return string
- */
-function discussion_set_topic_url($hook, $type, $url, $params) {
-	$entity = $params['entity'];
-
-	if (elgg_instanceof($entity, 'object', 'discussion_reply', 'ElggDiscussionReply')) {
-		$topic = $entity->getContainerEntity();
-		$title = elgg_get_friendly_title($topic->title);
-		return "discussion/view/{$topic->guid}/{$title}";
-	}
-
-	if (elgg_instanceof($entity, 'object', 'groupforumtopic')) {
-		$title = elgg_get_friendly_title($entity->title);
-		return "discussion/view/{$entity->guid}/{$title}";
-	}
-
-	return $url;
-}
-
-/**
- * We don't want people commenting on topics in the river
- * 
- * @param string $hook
- * @param string $type
- * @param string $return
- * @param array  $params
- * @return bool
- */
-function discussion_comment_override($hook, $type, $return, $params) {
-	if (elgg_instanceof($params['entity'], 'object', 'groupforumtopic')) {
-		return false;
-	}
-}
-
-/**
- * Add owner block link
- * 
- * @param string          $hook    'register'
- * @param string          $type    'menu:owner_block'
- * @param ElggMenuItem[]  $return
- * @param array           $params
- * @return ElggMenuItem[]  $return
- */
-function discussion_owner_block_menu($hook, $type, $return, $params) {
-	if (elgg_instanceof($params['entity'], 'group')) {
-		if ($params['entity']->forum_enable != "no") {
-			$url = "discussion/owner/{$params['entity']->guid}";
-			$item = new ElggMenuItem('discussion', elgg_echo('discussion:group'), $url);
-			$return[] = $item;
-		}
-	}
-
-	return $return;
-}
-
-/**
- * Set up menu items for river items
- * 
- * Add reply button for discussion topic. Remove the possibility
- * to comment on a discussion reply.
- * 
- * @param string         $hook   'register'
- * @param string         $type   'menu:river'
- * @param ElggMenuItem[] $return
- * @param array          $params
- * @return ElggMenuItem[] $return
- */
-function discussion_add_to_river_menu($hook, $type, $return, $params) {
-	if (!elgg_is_logged_in() || elgg_in_context('widgets')) {
-		return $return;
-	}
-
-	$item = $params['item'];
-	$object = $item->getObjectEntity();
-
-	if (elgg_instanceof($object, 'object', 'groupforumtopic')) {
-		$group = $object->getContainerEntity();
-
-		if ($group && ($group->canWriteToContainer() || elgg_is_admin_logged_in())) {
-				$options = array(
-				'name' => 'reply',
-				'href' => "#discussion-reply-{$object->guid}",
-				'text' => elgg_view_icon('speech-bubble'),
-				'title' => elgg_echo('reply:this'),
-				'rel' => 'toggle',
-				'priority' => 50,
-			);
-			$return[] = ElggMenuItem::factory($options);
-		}
-	} else {
-		if (elgg_instanceof($object, 'object', 'discussion_reply', 'ElggDiscussionReply')) {
-			// Group discussion replies cannot be commented
-			foreach ($return as $key => $item) {
-				if ($item->getName() === 'comment') {
-					unset($return[$key]);
-				}
-			}
-		}
-	}
-
-	return $return;
-}
-
-/**
- * Prepare a notification message about a new discussion topic
- *
- * @param string                          $hook         Hook name
- * @param string                          $type         Hook type
- * @param Elgg_Notifications_Notification $notification The notification to prepare
- * @param array                           $params       Hook parameters
- * @return Elgg_Notifications_Notification
- */
-function discussion_prepare_notification($hook, $type, $notification, $params) {
-	$entity = $params['event']->getObject();
-	$owner = $params['event']->getActor();
-	$recipient = $params['recipient'];
-	$language = $params['language'];
-	$method = $params['method'];
-
-	$descr = $entity->description;
-	$title = $entity->title;
-	$group = $entity->getContainerEntity();
-
-	$notification->subject = elgg_echo('discussion:topic:notify:subject', array($title), $language);
-	$notification->body = elgg_echo('discussion:topic:notify:body', array(
-		$owner->name,
-		$group->name,
-		$title,
-		$descr,
-		$entity->getURL()
-	), $language);
-	$notification->summary = elgg_echo('discussion:topic:notify:summary', array($entity->title), $language);
-
-	return $notification;
-}
-
-/**
- * Prepare a notification message about a new discussion reply
- *
- * @param string                          $hook         Hook name
- * @param string                          $type         Hook type
- * @param Elgg_Notifications_Notification $notification The notification to prepare
- * @param array                           $params       Hook parameters
- * @return Elgg_Notifications_Notification
- */
-function discussion_prepare_reply_notification($hook, $type, $notification, $params) {
-	$reply = $params['event']->getObject();
-	$topic = $reply->getContainerEntity();
-	$poster = $reply->getOwnerEntity();
-	$group = $topic->getContainerEntity();
-	$language = elgg_extract('language', $params);
-
-	$notification->subject = elgg_echo('discussion:reply:notify:subject', array($topic->title), $language);
-	$notification->body = elgg_echo('discussion:reply:notify:body', array(
-		$poster->name,
-		$topic->title,
-		$group->name,
-		$reply->description,
-		$topic->getURL(),
-	), $language);
-	$notification->summary = elgg_echo('discussion:reply:notify:summary', array($topic->title), $language);
-
-	return $notification;
-}
-
-/**
- * Get subscriptions for group notifications
- *
- * @param string $hook          'get'
- * @param string $type          'subscriptions'
- * @param array  $subscriptions Array containing subscriptions in the form
- *                       <user guid> => array('email', 'site', etc.)
- * @param array  $params        Hook parameters
- * @return array
- */
-function discussion_get_subscriptions($hook, $type, $subscriptions, $params) {
-	$reply = $params['event']->getObject();
-
-	if (!elgg_instanceof($reply, 'object', 'discussion_reply', 'ElggDiscussionReply')) {
-		return $subscriptions;
-	}
-
-	$group_guid = $reply->getContainerEntity()->container_guid;
-	return elgg_get_subscriptions_for_container($group_guid);
-}
-
-/**
- * A simple function to see who can edit a group discussion post
- * 
- * @param ElggComment $entity      the  comment $entity
- * @param ELggUser    $group_owner user who owns the group $group_owner
- * @return boolean
- */
-function groups_can_edit_discussion($entity, $group_owner) {
-
-	//logged in user
-	$user = elgg_get_logged_in_user_guid();
-
-	if (($entity->owner_guid == $user) || $group_owner == $user || elgg_is_admin_logged_in()) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-/**
- * Process upgrades for the groups plugin
- */
-function groups_run_upgrades() {
-	$path = elgg_get_plugins_path() . 'groups/upgrades/';
-	$files = elgg_get_upgrade_files($path);
-	foreach ($files as $file) {
-		include "$path{$file}";
-	}
-}
-
-/**
- * Allow group owner and discussion owner to edit discussion replies.
- * 
- * @param string  $hook   'permissions_check'
- * @param string  $type   'object'
- * @param boolean $return
- * @param array   $params Array('entity' => ElggEntity, 'user' => ElggUser)
- * @return boolean True if user is discussion or group owner
- */
-function discussion_can_edit_reply($hook, $type, $return, $params) {
-	/** @var $reply ElggEntity */
-	$reply = $params['entity'];
-	$user = $params['user'];
-
-	if (!elgg_instanceof($reply, 'object', 'discussion_reply', 'ElggDiscussionReply')) {
-		return $return;
-	}
-	
-	if ($reply->owner_guid == $user->guid) {
-	    return true;
-	}
-
-	$discussion = $reply->getContainerEntity();
-	if ($discussion->owner_guid == $user->guid) {
-		return true;
-	}
-
-	$group = $discussion->getContainerEntity();
-	if (elgg_instanceof($group, 'group') && $group->owner_guid == $user->guid) {
-		return true;
-	}
-
-	return false;
-}
-
-/**
- * Allow group members to post to a group discussion
- * 
- * @param string $hook   'container_permissions_check'
- * @param string $type   'object'
- * @param array  $return
- * @param array  $params Array with container, user and subtype
- * @return boolean $return
- */
-function discussion_reply_container_permissions_override($hook, $type, $return, $params) {
-	/** @var $container ElggEntity */
-	$container = $params['container'];
-	$user = $params['user'];
-
-	if (elgg_instanceof($container, 'object', 'groupforumtopic')) {
-		$group = $container->getContainerEntity();
-
-		if ($group->canWriteToContainer($user->guid) && $params['subtype'] === 'discussion_reply') {
-			return true;
-		}
-	}
-
-	return $return;
-}
-
-/**
- * Update access_id of discussion replies when topic access_id is updated.
- * 
- * @param string     $event  'update'
- * @param string     $type   'object'
- * @param ElggObject $object ElggObject
- */
-function discussion_update_reply_access_ids($event, $type, $object) {
-	if (elgg_instanceof($object, 'object', 'groupforumtopic')) {
-		$options = array(
-			'type' => 'object',
-			'subtype' => 'discussion_reply',
-			'container_guid' => $object->getGUID(),
-			'limit' => 0,
-		);
-		$batch = new ElggBatch('elgg_get_entities', $options);
-		foreach ($batch as $reply) {
-			if ($reply->access_id == $object->access_id) {
-				// Assume access_id of the replies is up-to-date
-				break;
-			}
-
-			// Update reply access_id
-			$reply->access_id = $object->access_id;
-			$reply->save();
-		}
-	}
-}
-
-/**
- * Set up discussion reply entity menu
- * 
- * @param string          $hook   'register'
- * @param string          $type   'menu:entity'
- * @param ElggMenuItem[]  $return
- * @param array           $params
- * @return ElggMenuItem[] $return
- */
-function discussion_reply_menu_setup($hook, $type, $return, $params) {
-	/** @var $reply ElggEntity */
-	$reply = elgg_extract('entity', $params);
-	
-	if (empty($reply) || !elgg_instanceof($reply, 'object', 'discussion_reply')) {
-		return $return;
-	}
-
-	if (!elgg_is_logged_in()) {
-		return $return;
-	}
-
-	if (elgg_in_context('widgets')) {
-		return $return;
-	}
-
-	// Reply has the same access as the topic so no need to view it
-	$remove = array('access');
-
-	$user = elgg_get_logged_in_user_entity();
-
-	// Allow discussion topic owner, group owner and admins to edit and delete
-	if ($reply->canEdit() && !elgg_in_context('activity')) {
-		$return[] = ElggMenuItem::factory(array(
-			'name' => 'edit',
-			'text' => elgg_echo('edit'),
-			'href' => "discussion/reply/edit/{$reply->guid}",
-			'priority' => 150,
-		));
-
-		$return[] = ElggMenuItem::factory(array(
-			'name' => 'delete',
-			'text' => elgg_view_icon('delete'),
-			'href' => "action/discussion/reply/delete?guid={$reply->guid}",
-			'priority' => 150,
-			'is_action' => true,
-			'confirm' => elgg_echo('deleteconfirm'),
-		));
-	} else {
-		// Edit and delete links can be removed from all other users
-		$remove[] = 'edit';
-		$remove[] = 'delete';
-	}
-
-	// Remove unneeded menu items
-	foreach ($return as $key => $item) {
-		if (in_array($item->getName(), $remove)) {
-			unset($return[$key]);
-		}
-	}
-
-	return $return;
-}
-
-
 /**
  * Runs unit tests for groups
  *
@@ -1331,12 +796,12 @@ function au_subgroups_init() {
   elgg_extend_view('groups/tool_latest', 'au_subgroups/group_module');
   elgg_extend_view('groups/sidebar/members', 'au_subgroups/sidebar/subgroups', -1);
   elgg_extend_view('groups/edit', 'au_subgroups/group/transfer');
-  
+
   // register the edit page's JavaScript
   $js = elgg_get_simplecache_url('js', 'au_subgroups/edit_js');
   elgg_register_js('au_subgroups_edit.js', $js);
   elgg_register_simplecache_view('js/au_subgroups/edit_js');
-  
+
   // after group creation or editing we need to check the permissions
   elgg_register_event_handler('update', 'group', 'au_subgroups_group_visibility');
   elgg_register_event_handler('create', 'member', 'au_subgroups_join_group', 0);
@@ -1346,39 +811,39 @@ function au_subgroups_init() {
   elgg_register_event_handler('create', 'group', 'au_subgroups_clone_layout_on_create', 1000);
   elgg_register_event_handler('create', 'group', 'au_subgroups_group_visibility', 1000);
   elgg_register_event_handler('pagesetup', 'system', 'au_subgroups_pagesetup');
-  
-  
-  
+
+
+
   add_group_tool_option('subgroups', elgg_echo('au_subgroups:group:enable'));
   add_group_tool_option('subgroups_members_create', elgg_echo('au_subgroups:group:memberspermissions'));
-  
+
   // route some urls that go through 'groups' handler
   elgg_register_plugin_hook_handler('route', 'groups', 'au_subgroups_groups_router', 499);
-  
+
   // make sure river entries have the correct access
   elgg_register_plugin_hook_handler('creating', 'river', 'au_subgroups_river_permissions');
-  
+
   // admins of the parent group can edit the sub-group
   elgg_register_plugin_hook_handler('permissions_check', 'group', 'au_subgroups_group_canedit');
-  
+
   // sort out what happens when a parent group is deleted
   elgg_register_plugin_hook_handler('action', 'groups/delete', 'au_subgroups_delete_group');
-  
+
   // prevent users from being invited into a subgroup they can't join
   elgg_register_plugin_hook_handler('action', 'groups/invite', 'au_subgroups_group_invite');
-  
+
   // remove 'join' and 'request membership' title links on subgroups for people not members of the parent
   elgg_register_plugin_hook_handler('register', 'menu:title', 'au_subgroups_titlemenu');
-  
+
   // register our widget
   elgg_register_widget_type('au_subgroups', elgg_echo('au_subgroups'), elgg_echo('au_subgroups:widget:description'), 'groups');
-  
+
   elgg_register_ajax_view('au_subgroups/search_results');
-  
-  
+
+
   // actions
   elgg_register_action('au_subgroups/move', dirname(__FILE__) . '/actions/au_subgroups/move.php');
-  
+
   // fix some problems
   if (elgg_is_admin_logged_in()) {
     run_function_once('au_subgroups_bugfix_20121024a');
@@ -1391,7 +856,7 @@ function au_subgroups_bugfix_20121024a() {
      'types' => 'group',
      'limit' => 0
   );
-  
+
   // using ElggBatch because there may be many, many groups in the installation
   // try to avoid oom errors
   $batch = new ElggBatch('elgg_get_entities', $options, 'au_subgroups_fix_acls_20121024a', 50);
@@ -1403,10 +868,10 @@ function au_subgroups_fix_acls_20121024a($result, $getter, $options) {
     $ac_name = elgg_echo('groups:group') . ": " . $result->name;
     $group_acl = create_access_collection($ac_name, $result->guid);
 		$result->group_acl = $group_acl;
-    
+
     // now add all members of the group to the acl
     $members = $result->getMembers(0, 0, false);
-    
+
     if (is_array($members) && count($members)) {
       foreach ($members as $member) {
         add_user_to_access_collection($member->guid, $group_acl);
