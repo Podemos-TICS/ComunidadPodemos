@@ -139,6 +139,7 @@ if ($categories) {
 		 'options' => array(
 			elgg_echo('advpoll:option:normal') => 'normal' ,
 			elgg_echo('advpoll:option:condorcet') => 'condorcet',
+			elgg_echo('advpoll:option:candidature') => 'candidature',
 			),
 		'value' => $poll_type,
 		)); ?>

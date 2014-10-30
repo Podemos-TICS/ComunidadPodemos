@@ -42,6 +42,13 @@ $mapping = array(
 	'advpoll:new' => 'New Poll',
 	'advpoll:editing' => 'Editing a Poll',
 	'advpoll:new:poll' => 'New Poll created.',
+    
+    	'friendlytime:future:minutes' => "in %s minutes",
+	'friendlytime:future:minutes:singular' => "in a minute",
+	'friendlytime:future:hours' => "in %s hours",
+	'friendlytime:future:hours:singular' => "in an hour",
+	'friendlytime:future:days' => "in %s days",
+	'friendlytime:future:days:singular' => "tomorrow",
 );
 
 add_translation('en', $mapping);

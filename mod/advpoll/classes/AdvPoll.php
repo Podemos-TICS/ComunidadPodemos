@@ -33,12 +33,14 @@ class AdvPoll extends ElggObject {
      * @param ElggEntity $poll  A poll entity.
      * @return array  An array of candidates.
      */
-    private function getCandidates() {
+    public function getCandidates($text) {
     	$options = array(
     			'relationship' => 'poll_choice',
     			'relationship_guid' => $this->guid,
     			'inverse_relationship' => TRUE,
     			'order_by_metadata' => array('name'=>'display_order','direction'=>'ASC'),
+                        'metadata_name' => 'text',
+                        'metadata_value' => $text,
     			'limit' => 0,
     	);
     	return elgg_get_entities_from_relationship($options);

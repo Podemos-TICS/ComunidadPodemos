@@ -36,6 +36,7 @@ function advpoll_init() {
 	elgg_register_action('advpoll/condorcet_vote', "$action_path/vote.php");
 	elgg_register_action('advpoll/edit', "$action_path/edit.php");
 	elgg_register_action('advpoll/delete', "$action_path/delete.php");
+	elgg_register_action('advpoll/postulate', "$action_path/postulate.php");
 	
 	// Es recomendable usar como nombre el mismo que el de la vista de la accion
 	// como primer termino, antes registrándola de este modo
@@ -83,7 +84,7 @@ function advpoll_page_handler($page)
 {
 	$base_dir = elgg_get_plugins_path() . 'advpoll/pages/';
 	
-	elgg_push_breadcrumb(elgg_echo('polls'), 'addpoll/all');
+	elgg_push_breadcrumb(elgg_echo('polls'), 'advpoll/all');
 	switch ($page[0]){
 		case "all":
 			include $base_dir . 'all.php';
@@ -117,13 +118,6 @@ function advpoll_page_handler($page)
 		case "not_initiated":
 			set_input('context', $page[0]);
 			include $base_dir . 'list.php';
-			break;
-		case "help":
-			switch ($page[1]) {
-				case "condorcet":
-					include $base_dir . 'condorcet_help.php';
-					break;
-			}
 			break;			
 		case "group":
 			set_input('guid', $page[1]);
@@ -137,7 +131,8 @@ function advpoll_page_handler($page)
 			//	include $base_dir . 'group_activas.php';
 			//}
 			break;
-				
+		default:
+			return false;
 	}
 	
 	return true;

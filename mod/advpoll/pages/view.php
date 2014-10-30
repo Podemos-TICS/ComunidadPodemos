@@ -51,7 +51,6 @@ if (!in_array($acceso_lectura, $acceso_col)) {
 	elgg_push_breadcrumb($poll->title);
 	
 	elgg_set_page_owner_guid($container->getGUID());
-	elgg_register_title_button('advpoll', 'new');
 	$title = $poll->title;
 	
 	$content = elgg_view_entity($poll, array('full_view' => true));
@@ -75,26 +74,38 @@ if (!in_array($acceso_lectura, $acceso_col)) {
 				'guid' => $guid,
 				));
 		}	
-		if ($show_results == 'yes' or !is_poll_on_date($poll)) {
+		if ($show_results == 'yes' || $poll->end_date < time()) {
 			$content .= elgg_view('advpoll/condorcet_results', array(
 				'guid' => $guid
 			));
 		}
-	} else { // normal
+	} else { // normal or candidature
+                if ($poll_type == 'candidature' && $poll->start_date >= time()) {
+                    elgg_register_menu_item('title', array(
+                        'name' => 'postulate',
+                        'href' => "action/advpoll/postulate?guid=$guid",
+                        'text' => $poll->getCandidates(elgg_get_logged_in_user_entity()->username)?
+                            elgg_echo("advpoll:depostulate") : elgg_echo("advpoll:postulate"),
+                        'link_class' => 'elgg-button elgg-button-action',
+                        'is_action' => true,
+                    ));
+                }
 		if (is_poll_on_date($poll) && in_array($access_vote, $acceso_col)) {
 			$content .= elgg_view_form('advpoll/vote' , array() , array(
 				'guid' => $guid,
 				));
 		
 		}
-		if ($show_results == 'yes' or !is_poll_on_date($poll)) {
+		if ($show_results == 'yes' || $poll->end_date < time()) {
 			$content .= elgg_view('advpoll/results', array(
 			'advpoll' => $poll
 			));
 		}
 	}
 	
-	$content .= elgg_view_comments($poll);
+	if ($poll->end_date < time()) {
+            $content .= elgg_view_comments($poll);
+        }
 	$body = elgg_view_layout('content', array(
 		'title' => $title,
 		'content' => $content,

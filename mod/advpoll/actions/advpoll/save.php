@@ -66,7 +66,7 @@ if (!$title) {
 	register_error(elgg_echo('advpoll:error:pregunta'));
 
 } else {
-	if ($n_candidates < 2) {
+	if ($n_candidates < 2 && $poll_type != 'candidature') {
 		register_error(elgg_echo('advpoll:error:number_of_candidates'));
 	} else { 
 		if (array_has_repeated_value($candidates)) {

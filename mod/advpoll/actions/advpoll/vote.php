@@ -39,7 +39,7 @@ if (!is_poll_on_date($poll)) {
 		if (user_has_voted($user, $guid) && !$poll->can_change_vote) {
 			register_error(elgg_echo('advpoll:action:error:cant_change_vote'));
 		} else {
-			if ($poll->poll_type == 'normal') {
+			if ($poll->poll_type == 'normal' || $poll->poll_type == 'candidature') {
 				$choice = get_input('response');
 				if ($choice == null) {
 					register_error(elgg_echo('advpoll:action:error:must_select_candidate'));

@@ -31,7 +31,7 @@ echo "<th class='condorcet-th'>";
 $texto .= elgg_echo('advpoll:condorcet:info');
 $texto .= elgg_view_icon('info');
 
-$direccion = elgg_get_site_url() . "advpoll/help/condorcet";
+$direccion = "http://es.wikipedia.org/wiki/M%C3%A9todo_de_Condorcet";
 echo elgg_view('output/url',array(
 	'text' => $texto ,
 	'href' => $direccion,

@@ -90,10 +90,10 @@ $metadata = elgg_view_menu('entity', array(
 
 	$subtitle .= "<br>" . elgg_echo('advpoll:view:ended:' . $poll_comparison_end . ':' . $poll_comparison_start ) . ',';
 	if ($poll_comparison_start == 'lessthanstart') {
-		$subtitle .= elgg_echo('advpoll:view:time:from') . date('d - M - Y', $start_date) . ', ';
+		$subtitle .= elgg_echo('advpoll:view:time:from') . elgg_get_friendly_time_19($start_date) . ', ';
 	} 
 	if ($poll_comparison_end == 'lessthanend') {
-		$subtitle .= elgg_echo('advpoll:view:time:to') .date('d - M - Y', $end_date);
+		$subtitle .= elgg_echo('advpoll:view:time:to') . elgg_get_friendly_time_19($end_date);
 	}
 	$subtitle .= elgg_echo('advpoll:view:audit') . elgg_echo('option:' . $audit) . ',';
 	$subtitle .= elgg_echo('advpoll:view:type') . elgg_echo('advpoll:type:' . $type) . ',';
@@ -101,12 +101,16 @@ $metadata = elgg_view_menu('entity', array(
 	$subtitle .= elgg_echo('advpoll:view:can:change:vote') . elgg_echo('advpoll:show:' . $can_change_vote) . '.';
 
 	
-	$content .= elgg_view('advpoll/choices', array('choices' => $choices));
+        if ($poll->poll_type == 'candidature') {
+            $content .= elgg_view('advpoll/candidature_choices', array('choices' => $choices));
+        } else {
+            $content .= elgg_view('advpoll/choices', array('choices' => $choices));
+        }
 	$params = array(
 		'entity' => $poll,
 		'metadata' => $metadata,
 		'subtitle' => $subtitle,
-		'tags' => $tags,
+		'tags' => elgg_view('output/tags', array('value' => $tags)),
 		'content' => $content,
 	);
 	$params = $params + $vars;
